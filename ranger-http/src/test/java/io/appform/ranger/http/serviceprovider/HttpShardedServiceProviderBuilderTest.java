@@ -81,7 +81,7 @@ class HttpShardedServiceProviderBuilderTest {
                 .withHealthUpdateIntervalMs(1000)
                 .withObjectMapper(MAPPER)
                 .withClientConfiguration(clientConfig)
-                .withNodeData(farmNodeData)
+                .withNodeDataSupplier(() ->farmNodeData)
                 .withSerializer(node -> requestBytes)
                 .build();
         serviceProvider.start();

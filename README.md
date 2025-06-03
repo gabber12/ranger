@@ -156,7 +156,7 @@ final ServiceProvider<TestShardInfo> serviceProvider
                 })
                 .withHostname(host)
                 .withPort(port)
-                .withNodeData(new TestShardInfo(shardId)) //Set the shard info for this shard
+                .withNodeDataSupplier(() -> new TestShardInfo(shardId)) //Set the shard info for this shard
                 .withHealthcheck(new Healthcheck() {
                     @Override
                     public HealthcheckStatus check() {

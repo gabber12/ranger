@@ -46,12 +46,14 @@ public class ServiceProvider<T, S extends Serializer<T>> {
             ServiceNode<T> serviceNode,
             S serializer,
             NodeDataSink<T, S> dataSink,
+            Signal<T> nodeDataSignal,
             List<Signal<HealthcheckResult>> signalGenerators) {
         this.service = service;
         this.serviceNode = serviceNode;
         this.serializer = serializer;
         this.dataSink = dataSink;
         signalGenerators.forEach(signalGenerator -> signalGenerator.registerConsumer(this::handleHealthUpdate));
+        nodeDataSignal.registerConsumer(serviceNode::setNodeData);
     }
 
     public void start() {

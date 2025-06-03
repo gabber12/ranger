@@ -110,7 +110,7 @@ public abstract class BaseRangerZKClientTest {
                 .withNamespace("test-n")
                 .withServiceName("s1")
                 .withSerializer(this::write)
-                .withNodeData(TestNodeData.builder().shardId(1).build())
+                .withNodeDataSupplier(() -> TestNodeData.builder().shardId(1).build())
                 .withHealthcheck(() -> HealthcheckStatus.healthy)
                 .withAdditionalRefreshSignal(refreshProviderSignal)
                 .withCuratorFramework(curatorFramework)

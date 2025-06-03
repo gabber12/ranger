@@ -84,6 +84,7 @@ class CustomShardSelectorTest {
         public List<ServiceNode<TestShardInfo>> nodes(Predicate<TestShardInfo> criteria, MapBasedServiceRegistry<TestShardInfo> serviceRegistry) {
             val nodes = new ArrayList<ServiceNode<TestShardInfo>>();
             serviceRegistry.nodes().entries().forEach(entry -> {
+
                 val shardInfo = entry.getKey();
                 if (criteria.test(shardInfo)) {
                     nodes.add(entry.getValue());
@@ -143,7 +144,7 @@ class CustomShardSelectorTest {
                 })
                 .withHostname(host)
                 .withPort(port)
-                .withNodeData(new TestShardInfo(a, b))
+                .withNodeDataSupplier(() -> new TestShardInfo(a, b))
                 .withHealthcheck(Healthchecks.defaultHealthyCheck())
                 .withHealthUpdateIntervalMs(1000)
                 .build();

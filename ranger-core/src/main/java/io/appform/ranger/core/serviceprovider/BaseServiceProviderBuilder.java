@@ -40,6 +40,7 @@ import lombok.val;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -52,9 +53,10 @@ public abstract class BaseServiceProviderBuilder<T, B extends BaseServiceProvide
     protected String hostname;
     protected int port;
     protected String portScheme;
-    protected T nodeData;
+    protected Supplier<T> nodeDataSupplier;
     protected int healthUpdateIntervalMs;
     protected int staleUpdateThresholdMs;
+    protected int nodeDataRefreshIntervalMs;
     protected NodeDataSink<T, S> nodeDataSource = null;
     protected final List<Healthcheck> healthchecks = Lists.newArrayList();
     protected final List<Consumer<Void>> startSignalHandlers = Lists.newArrayList();
@@ -94,8 +96,8 @@ public abstract class BaseServiceProviderBuilder<T, B extends BaseServiceProvide
         return (B)this;
     }
 
-    public B withNodeData(T nodeData) {
-        this.nodeData = nodeData;
+    public B withNodeDataSupplier(Supplier<T> nodeDataSupplier) {
+        this.nodeDataSupplier = nodeDataSupplier;
         return (B)this;
     }
 
@@ -106,6 +108,11 @@ public abstract class BaseServiceProviderBuilder<T, B extends BaseServiceProvide
 
     public B withHealthUpdateIntervalMs(int healthUpdateIntervalMs) {
         this.healthUpdateIntervalMs = healthUpdateIntervalMs;
+        return (B)this;
+    }
+
+    public B withNodeDataRefreshIntervalMs(int nodeDataRefreshIntervalMs) {
+        this.nodeDataRefreshIntervalMs = nodeDataRefreshIntervalMs;
         return (B)this;
     }
 
@@ -183,6 +190,13 @@ public abstract class BaseServiceProviderBuilder<T, B extends BaseServiceProvide
             staleUpdateThresholdMs = 5000;
         }
 
+        if (nodeDataRefreshIntervalMs < 5000) {
+            log.warn("Node Data update threshold for {} should be greater than 5000ms  Current value: {} ms. " +
+                    "Being set to 5000ms", serviceName, staleUpdateThresholdMs);
+            nodeDataRefreshIntervalMs = 5000;
+        }
+
+
         val serviceHealthAggregator = new ServiceHealthAggregator();
         isolatedMonitors.forEach(serviceHealthAggregator::addIsolatedMonitor);
 
@@ -205,29 +219,41 @@ public abstract class BaseServiceProviderBuilder<T, B extends BaseServiceProvide
                 .add(healthcheckUpdateSignalGenerator)
                 .addAll(additionalRefreshSignals)
                 .build();
+
         val serviceNode = ServiceNode.<T>builder()
-          .host(hostname)
-          .port(port)
-          .portScheme(portScheme)
-          .nodeData(nodeData)
-          .build();
-        val serviceProvider = new ServiceProvider<>(service, serviceNode,
-                                                    serializer,
-                                                    usableNodeDataSource,
-                                                    signalGenerators);
+                .host(hostname)
+                .port(port)
+                .portScheme(portScheme)
+                .nodeData(nodeDataSupplier == null ?  null : nodeDataSupplier.get())
+                .build();
+
+        val nodeDataUpdateSignal = new ScheduledSignal<>(service,
+                nodeDataSupplier,
+                Collections.emptyList(),
+                nodeDataRefreshIntervalMs);
+
+        val serviceProvider = new ServiceProvider<>(service,
+                serviceNode,
+                serializer,
+                usableNodeDataSource,
+                nodeDataUpdateSignal,
+                signalGenerators);
+
         val startSignal = serviceProvider.getStartSignal();
 
         startSignal
                 .registerConsumers(startSignalHandlers)
                 .registerConsumer(x -> usableNodeDataSource.start())
                 .registerConsumer(x -> healthServices.forEach(HealthService::start))
-                .registerConsumer(x -> signalGenerators.forEach(Signal::start));
+                .registerConsumer(x -> signalGenerators.forEach(Signal::start))
+                .registerConsumer(x ->nodeDataUpdateSignal.start() );
 
         val stopSignal = serviceProvider.getStopSignal();
         stopSignal
                 .registerConsumer(x -> healthServices.forEach(HealthService::stop))
                 .registerConsumer(x -> signalGenerators.forEach(Signal::stop))
                 .registerConsumer(x -> usableNodeDataSource.stop())
+                .registerConsumer(x -> nodeDataUpdateSignal.stop())
                 .registerConsumers(stopSignalHandlers);
         return serviceProvider;
     }

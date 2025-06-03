@@ -149,7 +149,7 @@ class ServiceProviderHealthcheckTest {
                     })
                     .withHostname(host)
                     .withPort(port)
-                    .withNodeData(TestNodeData.builder().shardId(shardId).build())
+                    .withNodeDataSupplier(() -> TestNodeData.builder().shardId(shardId).build())
                     .withHealthcheck(healthcheck)
                     .withHealthUpdateIntervalMs(1000)
                     .build();

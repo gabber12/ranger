@@ -127,7 +127,7 @@ class ServiceProviderTest {
                 .withHostname("localhost-1")
                 .withPort(9000)
                 .withSerializer(new TestSerializerImpl())
-                .withNodeData(TestNodeData.builder().shardId(1).build())
+                .withNodeDataSupplier(() -> TestNodeData.builder().shardId(1).build())
                 .withHealthcheck(Healthchecks.defaultHealthyCheck())
                 .withHealthUpdateIntervalMs(1000)
                 .build();

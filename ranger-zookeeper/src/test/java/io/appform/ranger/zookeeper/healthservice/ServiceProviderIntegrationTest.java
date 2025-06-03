@@ -140,7 +140,7 @@ class ServiceProviderIntegrationTest {
                     }
                     return null;
                 })
-                .withNodeData(TestNodeData.builder().shardId(shardId).build())
+                .withNodeDataSupplier(() -> TestNodeData.builder().shardId(shardId).build())
                 .withHostname(host)
                 .withPort(port)
                 .withHealthcheck(Healthchecks.defaultHealthyCheck())

@@ -263,7 +263,6 @@ public abstract class ServiceDiscoveryBundle<T extends Configuration> implements
                                                                                              int port,
                                                                                              String portScheme) {
         val nodeInfoResolver = createNodeInfoResolver();
-        val nodeInfo = nodeInfoResolver.resolve(serviceDiscoveryConfiguration);
         val initialDelayForMonitor = serviceDiscoveryConfiguration.getInitialDelaySeconds() > 1
                                      ? serviceDiscoveryConfiguration.getInitialDelaySeconds() - 1
                                      : 0;
@@ -285,7 +284,7 @@ public abstract class ServiceDiscoveryBundle<T extends Configuration> implements
                     return null;
                 })
                 .withPortScheme(portScheme)
-                .withNodeData(nodeInfo)
+                .withNodeDataSupplier(() -> nodeInfoResolver.resolve(serviceDiscoveryConfiguration))
                 .withHostname(hostname)
                 .withPort(port)
                 .withHealthcheck(new InternalHealthChecker(healthchecks))
